@@ -1,0 +1,11 @@
+{
+  "version": "2.3.0",
+  "mandatory": true,
+  "releaseDate": "2026-10-04",
+  "apkUrl": "",
+  "notes": [
+    "Automated update checker added",
+    "Improved notification delivery",
+    "Stability and performance improvements"
+  ]
+}
