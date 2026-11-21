@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Rise Hub — Custom App Store</title>
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    window.tailwind = window.tailwind || {};
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            apple: {
+              blue: '#007AFF',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              indigo: '#5856D6',
+              orange: '#FF9500',
+              pink: '#FF2D55',
+              purple: '#AF52DE',
+              red: '#FF3B30',
+              teal: '#5AC8FA',
+              yellow: '#FFCC00',
+              cardDark: '#1C1C1E',
+              cardDarkSecondary: '#2C2C2E',
+              cardDarkTertiary: '#3A3A3C',
+              bgDark: '#000000',
+              bgLight: '#F2F2F7',
+              cardLight: '#FFFFFF',
+              cardLightSecondary: '#E5E5EA',
+              separatorDark: '#38383A',
+              separatorLight: '#C6C6C8'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          },
+          borderRadius: {
+            'ios': '1.25rem',
+            'ios-icon': '22.5%',
+            'ios-card': '1.75rem'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Apple SF Pro Style Smooth Scrolling & Physics */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+    input, textarea {
+      user-select: text;
+    }
+    
+    body {
+      touch-action: pan-x pan-y;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Glassmorphism */
+    .glass-nav-light {
+      background: rgba(242, 242, 247, 0.78);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+    }
+    .glass-nav-dark {
+      background: rgba(18, 18, 20, 0.75);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+    }
+
+    .glass-card-dark {
+      background: rgba(28, 28, 30, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .glass-card-light {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* iOS Squircle Icon Shape */
+    .ios-squircle {
+      border-radius: 22.5%;
+      box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.12);
+    }
+    .ios-squircle-large {
+      border-radius: 22.5%;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Spring animations */
+    .pressable {
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+    }
+    .pressable:active {
+      transform: scale(0.96);
+      opacity: 0.88;
+    }
+
+    /* Bottom safe inset support */
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top, 14px);
+    }
+
+    /* Detail Modal Slide Up Animation */
+    .modal-enter {
+      transform: translateY(100%);
+      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-enter-active {
+      transform: translateY(0);
+    }
+    .modal-leave {
+      transform: translateY(0);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 1, 1);
+    }
+    .modal-leave-active {
+      transform: translateY(100%);
+    }
+
+    /* Rotating download spinner */
+    @keyframes spin-cw {
+      to { transform: rotate(360deg); }
+    }
+    .spin-loading {
+      animation: spin-cw 0.8s linear infinite;
+    }
+
+    /* Carousel Horizontal Smooth Snap */
+    .snap-x-mandatory {
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .snap-center-item {
+      scroll-snap-align: center;
+    }
+
+    /* Smooth Fade/Slide Page Transitions */
+    .tab-pane {
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tab-pane.tab-fade-in {
+      animation: tabFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes tabFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+
+    /* Offline visual fallback: the store must remain polished even if the Tailwind CDN is unavailable. */
+    .hidden { display: none !important; }
+    .offline-mode { background: #000 !important; color: #f2f2f7 !important; }
+    .offline-mode body, .offline-mode .max-w-md { background: #000 !important; color: #f2f2f7 !important; }
+    .offline-mode header { background: rgba(18,18,20,.94) !important; border-color: rgba(255,255,255,.09) !important; min-height: 58px; display:flex; align-items:center; padding: 14px 20px !important; }
+    .offline-mode #storeMain { display:block; width:100%; max-width:430px; margin:0 auto; padding:16px 16px 110px !important; }
+    .offline-mode #storeMain > .tab-pane { width:100%; }
+    .offline-mode #tab-today { display:block; }
+    .offline-mode #offlineBanner { display:flex; align-items:center; justify-content:center; margin:0 auto; width:100%; max-width:430px; padding:10px 16px; background:#161618; border-bottom:1px solid rgba(255,255,255,.08); color:#d1d1d6; font-size:12px; font-weight:600; letter-spacing:.01em; }
+    .offline-mode #todayCarouselScroll { display:flex; gap:14px; overflow-x:auto; padding:4px 16px 10px; margin:0 -16px; }
+    .offline-mode #todayCarouselScroll > div { flex:0 0 280px; background:#1c1c1e; border:1px solid rgba(255,255,255,.08); border-radius:20px; overflow:hidden; }
+    .offline-mode #todayCarouselScroll img { max-width:100%; object-fit:cover; }
+    .offline-mode #todayHeroContainer { display:flex; flex-direction:column; gap:20px; margin-top:20px; }
+    .offline-mode #todayHeroContainer > div { background:#111113; border-radius:28px; overflow:hidden; border:1px solid rgba(255,255,255,.09); min-height:300px; }
+    .offline-mode #todayHeroContainer img { max-width:100%; }
+    .offline-mode #todayTopPicksList { background:#1c1c1e; border-radius:22px; padding:4px 12px; border:1px solid rgba(255,255,255,.08); }
+    .offline-mode #todayTopPicksList > div { min-height:68px; display:flex; align-items:center; border-bottom:1px solid rgba(255,255,255,.07); }
+    .offline-mode #todayTopPicksList > div:last-child { border-bottom:0; }
+    .offline-mode .text-black, .offline-mode .dark\:text-white { color:#f2f2f7 !important; }
+    .offline-mode .text-gray-500, .offline-mode .dark\:text-gray-400, .offline-mode .text-gray-400 { color:#98989f !important; }
+    .offline-mode .bg-white, .offline-mode .dark\:bg-apple-cardDark { background:#1c1c1e !important; }
+    .offline-mode .bg-gray-200, .offline-mode .dark\:bg-gray-800 { background:#2c2c2e !important; }
+    .offline-mode nav { background:rgba(18,18,20,.96) !important; border-color:rgba(255,255,255,.09) !important; }
+    .offline-mode #feedLoadingState { background:#000; color:#98989f; min-height:55vh; display:flex; align-items:center; justify-content:center; }
+    .offline-mode #feedEmptyState { color:#f2f2f7; background:#000; }
+    .offline-mode #feedEmptyState h2 { color:#f2f2f7 !important; }
+    .offline-mode #feedEmptyState p { color:#98989f !important; }
+    .today-inline-empty { padding:32px; text-align:center; border:1px solid rgba(255,255,255,.08); border-radius:22px; color:#98989f; background:#1c1c1e; }
+
+    /* Hide scrollbars cleanly across browsers */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .screenshot-frame { width: 256px; height: 160px; flex: 0 0 256px; border-radius: 18px; overflow: hidden; background: #111113; border: 1px solid rgba(255,255,255,.08); }
+    .screenshot-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .skeleton { position: relative; overflow: hidden; background: #1c1c1e; border-radius: 16px; }
+    .skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent); animation: skeleton-shimmer 1.2s infinite; }
+    @keyframes skeleton-shimmer { to { transform: translateX(100%); } }
+    .progress-track { height: 6px; border-radius: 999px; background: #2c2c2e; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: inherit; background: #007aff; transition: width .2s ease; }
+    .download-card { background: #1c1c1e; border: 1px solid rgba(255,255,255,.07); border-radius: 18px; padding: 14px; }
+    .modal-backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .nav-scroll { overflow-x: auto; }
+    .chart-rank { width: 24px; text-align: center; font-size: 12px; font-weight: 800; color: #98989f; }
+    .storage-meter { height: 5px; border-radius: 999px; background: #2c2c2e; overflow: hidden; }
+    .storage-meter > span { display:block; height:100%; width: 58%; background:#34c759; border-radius:inherit; }
+    .offline-mode .skeleton { background:#1c1c1e; }
+    .offline-mode .download-card { background:#1c1c1e; }
+    .offline-mode .screenshot-frame { background:#111113; }
+    .offline-banner { min-height:44px; width:100%; padding:10px 16px; display:flex; align-items:center; justify-content:center; gap:9px; background:rgba(28,28,30,.96); color:#f2f2f7; border-bottom:1px solid rgba(255,255,255,.08); box-shadow:0 8px 24px rgba(0,0,0,.16); font-size:12px; font-weight:650; letter-spacing:.01em; }
+    .offline-banner.hidden { display:none !important; }
+    .offline-banner-icon { width:18px; height:18px; flex:0 0 18px; color:#98989f; }
+    @media (prefers-reduced-motion: no-preference) { .offline-banner { animation:offline-banner-in .18s ease-out; } }
+    @keyframes offline-banner-in { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Rise Player branded video shell */
+    .rise-video-player { position:relative; width:100%; height:100%; min-height:190px; overflow:hidden; background:#050506; color:#fff; }
+    .rise-video-frame { position:absolute; inset:0; width:100%; height:100%; border:0; background:#050506; }
+    .rise-player-brand { position:absolute; top:12px; left:12px; display:flex; align-items:center; gap:7px; z-index:3; padding:6px 10px; border-radius:999px; background:rgba(10,10,12,.78); backdrop-filter:blur(12px); font-size:11px; font-weight:750; pointer-events:none; }
+    .rise-player-mark { display:grid; place-items:center; width:20px; height:20px; border-radius:7px; background:#087cff; font-size:12px; font-weight:900; }
+    .rise-player-center { position:absolute; z-index:3; left:50%; top:50%; transform:translate(-50%,-50%); width:58px; height:58px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.32); border-radius:50%; color:#fff; background:rgba(0,0,0,.62); backdrop-filter:blur(12px); font-size:21px; }
+    .rise-player-bottom { position:absolute; z-index:3; left:0; right:0; bottom:0; display:flex; align-items:center; gap:8px; padding:28px 12px 10px; background:linear-gradient(transparent,rgba(0,0,0,.88)); }
+    .rise-player-now { flex:1; min-width:0; font-size:10px; color:rgba(255,255,255,.85); }
+    .rise-player-control { min-height:30px; padding:0 9px; border-radius:9px; background:rgba(255,255,255,.14); color:#fff; font-size:11px; }
+    .rise-player-hidden { display:none !important; }
+\n    /* Detail media carousel */
+    .detail-media-carousel { position:relative; width:100%; }
+    .detail-media-stage { position:relative; width:100%; aspect-ratio:16/10; min-height:190px; border-radius:20px; overflow:hidden; background:#0f0f10; border:1px solid rgba(255,255,255,.08); }
+    .detail-media-content { width:100%; height:100%; display:block; object-fit:contain; background:#0f0f10; border:0; }
+    .detail-media-arrow { position:absolute; top:50%; transform:translateY(-50%); width:34px; height:34px; border-radius:999px; background:rgba(0,0,0,.62); color:#fff; border:1px solid rgba(255,255,255,.14); font-size:24px; line-height:28px; display:flex; align-items:center; justify-content:center; z-index:2; }
+    .detail-media-arrow.left { left:10px; }
+    .detail-media-arrow.right { right:10px; }
+    .detail-media-meta { display:flex; justify-content:space-between; gap:12px; padding:8px 2px 2px; font-size:10px; color:#8e8e93; }
+    .detail-media-dots { display:flex; justify-content:center; align-items:center; gap:5px; min-height:20px; }
+    .detail-media-dot { width:6px; height:6px; border-radius:999px; background:#48484a; transition:width .2s ease, background .2s ease; }
+    .detail-media-dot.active { width:18px; background:#007aff; }
+    /* First-time onboarding */
+    .onboarding-target { position:relative !important; z-index:91 !important; box-shadow:0 0 0 2px #007aff, 0 0 0 7px rgba(0,122,255,.18), 0 18px 50px rgba(0,0,0,.45) !important; border-radius:18px !important; }
+    .onboarding-overlay { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.72); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); display:flex; align-items:flex-end; justify-content:center; padding:20px; }
+    .onboarding-card { width:100%; max-width:390px; background:#1c1c1e; color:#f2f2f7; border:1px solid rgba(255,255,255,.09); border-radius:26px; padding:22px; box-shadow:0 24px 80px rgba(0,0,0,.55); }
+    .onboarding-step { color:#8e8e93; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+    .onboarding-card h2 { margin-top:8px; font-size:20px; font-weight:800; letter-spacing:-.02em; }
+    .onboarding-card p { margin-top:8px; color:#c7c7cc; font-size:13px; line-height:1.55; }
+    .onboarding-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+    .onboarding-actions button { min-height:44px; border-radius:14px; font-size:13px; font-weight:750; }
+    .onboarding-skip { margin-top:10px; width:100%; min-height:36px; color:#8e8e93; font-size:12px; }
+  </style>
+  <link rel="stylesheet" href="rise_glass.css">
+</head>
+<body class="bg-[#F2F2F7] dark:bg-black text-[#1C1C1E] dark:text-[#F2F2F7] font-sans antialiased min-h-screen selection:bg-apple-blue selection:text-white">
+
+  <!-- Main Container -->
+  <div class="rg-ambient" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div id="riseRoot" class="relative max-w-md mx-auto min-h-screen bg-[#F2F2F7] dark:bg-black flex flex-col shadow-2xl overflow-x-hidden pb-32">
+
+    <!-- Top Sticky Bar - Ultra-clean Minimalist Header -->
+    <header class="sticky top-0 z-30 px-5 py-3.5 flex items-center justify-between glass-nav-light dark:glass-nav-dark border-b border-black/[0.04] dark:border-white/[0.08] transition-colors duration-200">
+      <h1 class="text-xl font-bold tracking-tight text-black dark:text-white leading-none">Rise Hub</h1>
+    </header>
+
+    <div id="offlineBanner" class="hidden offline-banner" role="status" aria-live="polite" aria-hidden="true">
+      <svg class="offline-banner-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M17.5 19H9a6 6 0 1 1 1.55-11.8A5.5 5.5 0 0 1 21 9.5a4.5 4.5 0 0 1-3.5 4.38" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m8 8 8 8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span>Offline Mode - Showing cached data</span>
+    </div>
+
+    <!-- Feed status -->
+    <div id="feedStatus" class="hidden px-4 pt-2">
+      <div class="rounded-xl border border-black/[0.05] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.04] px-3 py-2 text-[11px] text-gray-500 dark:text-gray-400">
+        <span id="feedStatusText"></span>
+      </div>
+    </div>
+
+    <!-- Initial feed loading state -->
+    <section id="feedLoadingState" class="px-6 py-16 text-center">
+      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Loading apps...</p>
+    </section>
+
+    <!-- CONTENT TABS -->
+    <main id="storeMain" class="flex-1 w-full px-4 pt-3 pb-8 hidden">
+      <section id="feedEmptyState" class="hidden min-h-[55vh] flex-col items-center justify-center text-center px-6">
+        <h2 class="text-lg font-bold text-black dark:text-white">Apps are currently unavailable.</h2>
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">The app feed could not be loaded.</p>
+        <button id="feedRetryButton" type="button" class="mt-5 px-5 py-2.5 rounded-full bg-apple-blue text-white text-xs font-bold">Retry</button>
+      </section>
+
+      <!-- ================= TODAY TAB ================= -->
+      <section id="tab-today" class="tab-pane space-y-6 block">
+        <div class="rg-today-head">
+          <div>
+            <span id="currentDateStr" class="rg-date">SATURDAY, SEPTEMBER 26</span>
+            <h2 class="rg-title">Today</h2>
+          </div>
+          <button type="button" class="rg-avatar rg-glass-chip pressable" onclick="switchTab('search')" aria-label="Search apps"><i data-lucide="search" class="w-5 h-5"></i></button>
+        </div>
+        <div id="todayHeroContainer" class="rg-feed"></div>
+        <div id="todayTopPicksList" class="hidden"></div>
+        <div id="todayChartsList" class="hidden"></div>
+      </section>
+
+      <!-- ================= GAMES TAB ================= -->
+      <section id="tab-games" class="tab-pane space-y-5 hidden">
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-black dark:text-white">Games</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Explore high-octane action, strategy, & immersive worlds</p>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 scroll-smooth">
+          <button onclick="filterGamesCategory('All', this)" class="category-pill-game px-3.5 py-1.5 rounded-full text-xs font-semibold bg-apple-blue text-white shadow-sm whitespace-nowrap pressable">All Games</button>
+          <button onclick="filterGamesCategory('Action', this)" class="category-pill-game px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Action</button>
+          <button onclick="filterGamesCategory('Strategy', this)" class="category-pill-game px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Strategy</button>
+          <button onclick="filterGamesCategory('Puzzle', this)" class="category-pill-game px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Puzzle</button>
+          <button onclick="filterGamesCategory('Racing', this)" class="category-pill-game px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Racing</button>
+          <button onclick="filterGamesCategory('Indie', this)" class="category-pill-game px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Indie</button>
+        </div>
+
+        <!-- Featured Games Spotlight Carousel -->
+        <div id="gamesSpotlightContainer" class="space-y-2">
+          <!-- Injected Banner -->
+        </div>
+
+        <!-- Games Grid Section -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold tracking-tight text-black dark:text-white">Top Titles</h3>
+            <span id="gamesCountBadge" class="text-xs text-gray-500 font-medium">8 Games</span>
+          </div>
+          <div id="gamesListGrid" class="space-y-3">
+            <!-- Injected cards -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= APPS TAB ================= -->
+      <section id="tab-apps" class="tab-pane space-y-5 hidden">
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-black dark:text-white">Apps</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Boost productivity, edit media, & power up your workflow</p>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 scroll-smooth">
+          <button onclick="filterAppsCategory('All', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-apple-blue text-white shadow-sm whitespace-nowrap pressable">All Apps</button>
+          <button onclick="filterAppsCategory('Productivity', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Productivity</button>
+          <button onclick="filterAppsCategory('Utilities', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Utilities</button>
+          <button onclick="filterAppsCategory('Tools', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Tools</button>
+          <button onclick="filterAppsCategory('Entertainment', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Entertainment</button>
+          <button onclick="filterAppsCategory('Education', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Education</button>
+          <button onclick="filterAppsCategory('Social', this)" class="category-pill-app px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-apple-cardDark text-gray-700 dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap pressable">Social</button>
+        </div>
+
+        <!-- Featured Apps Showcase -->
+        <div id="appsSpotlightContainer" class="space-y-2">
+          <!-- Injected Banner -->
+        </div>
+
+        <!-- Apps Grid Section -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold tracking-tight text-black dark:text-white">Trending Apps</h3>
+            <span id="appsCountBadge" class="text-xs text-gray-500 font-medium">8 Apps</span>
+          </div>
+          <div id="appsListGrid" class="space-y-3">
+            <!-- Injected cards -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SEARCH TAB ================= -->
+      <section id="tab-search" class="tab-pane space-y-4 hidden">
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-black dark:text-white">Search</h2>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </div>
+          <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Search apps, games, categories, developers..." class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-gray-200/80 dark:bg-apple-cardDarkSecondary text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-apple-blue transition-all border border-transparent dark:border-white/[0.05]" autocomplete="off" spellcheck="false">
+          <button id="searchClearBtn" onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden" aria-label="Clear search">
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Suggested Search Chips -->
+        <div id="searchSuggestions" class="space-y-2">
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Suggested Topics</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="applySearchQuery('Notes')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-apple-cardDark text-gray-800 dark:text-gray-200 border border-black/[0.05] dark:border-white/[0.08] pressable">Notes & Writing</button>
+            <button onclick="applySearchQuery('VPN')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-apple-cardDark text-gray-800 dark:text-gray-200 border border-black/[0.05] dark:border-white/[0.08] pressable">Privacy & VPN</button>
+            <button onclick="applySearchQuery('Action')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-apple-cardDark text-gray-800 dark:text-gray-200 border border-black/[0.05] dark:border-white/[0.08] pressable">Action Games</button>
+            <button onclick="applySearchQuery('Tools')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-apple-cardDark text-gray-800 dark:text-gray-200 border border-black/[0.05] dark:border-white/[0.08] pressable">Creative Tools</button>
+            <button onclick="applySearchQuery('Utilities')" class="px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-apple-cardDark text-gray-800 dark:text-gray-200 border border-black/[0.05] dark:border-white/[0.08] pressable">Utilities</button>
+          </div>
+        </div>
+
+        <!-- Search Results List -->
+        <div id="searchResultsContainer" class="space-y-3 pt-1">
+          <!-- Injected Search Results -->
+        </div>
+      </section>
+
+      <!-- ================= DOWNLOADS TAB ================= -->
+      <section id="tab-downloads" class="tab-pane space-y-5 hidden">
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-black dark:text-white">Downloads</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Downloaded apps remain available for 7 days.</p>
+        </div>
+        <div id="downloadsStatus" class="hidden rounded-2xl border border-black/[0.05] dark:border-white/[0.08] bg-white dark:bg-apple-cardDark px-4 py-3 text-xs text-gray-500 dark:text-gray-400"></div>
+        <div id="downloadsList" class="space-y-3"></div>
+        <div id="downloadsEmpty" class="hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-apple-cardDark p-8 text-center">
+          <h3 class="text-sm font-bold text-black dark:text-white">No downloads yet</h3>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Your downloaded applications will appear here.</p>
+        </div>
+        <details class="pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+          <summary class="cursor-pointer text-xs font-semibold text-gray-500 dark:text-gray-400">Diagnostics</summary>
+          <div id="diagnosticsLog" class="mt-3 max-h-40 overflow-y-auto rounded-xl bg-black/[0.03] dark:bg-white/[0.03] p-3 text-[10px] text-gray-500 dark:text-gray-400"></div>
+        </details>
+        <div class="pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+          <h3 class="text-lg font-bold text-black dark:text-white">My Wishlist</h3>
+          <div id="wishlistList" class="mt-3 space-y-3"></div>
+          <div id="wishlistEmpty" class="hidden mt-3 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-apple-cardDark p-6 text-center text-xs text-gray-500 dark:text-gray-400">No saved apps.</div>
+        </div>
+      </section>
+
+      <!-- ================= WISHLIST TAB ================= -->
+      <section id="tab-wishlist" class="tab-pane space-y-5 hidden">
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-black dark:text-white">Wishlist</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Your saved applications.</p>
+        </div>
+        <div id="wishlistTabList" class="space-y-3"></div>
+        <div id="wishlistTabEmpty" class="hidden rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-apple-cardDark p-8 text-center text-xs text-gray-500 dark:text-gray-400">No saved apps.</div>
+      </section>
+
+    </main>
+
+    <!-- Floating liquid-glass navigation -->
+    <nav id="bottomNavigation" class="rg-dock" aria-label="Main navigation">
+      <div class="rg-gl rg-bar" id="rgBar"></div>
+      <div class="rg-items" id="rgItems">
+      <button type="button" data-tab="today" id="tabBtn-today" class="nav-tab-btn rg-tab text-apple-blue"><i data-lucide="layers" class="w-5 h-5"></i><span>Today</span></button>
+      <button type="button" data-tab="games" id="tabBtn-games" class="nav-tab-btn rg-tab text-gray-400"><i data-lucide="gamepad-2" class="w-5 h-5"></i><span>Games</span></button>
+      <button type="button" data-tab="apps" id="tabBtn-apps" class="nav-tab-btn rg-tab text-gray-400"><i data-lucide="layout-grid" class="w-5 h-5"></i><span>Apps</span></button>
+      <button type="button" data-tab="search" id="tabBtn-search" class="nav-tab-btn rg-tab text-gray-400"><i data-lucide="search" class="w-5 h-5"></i><span>Search</span></button>
+      <button type="button" data-tab="downloads" id="tabBtn-downloads" class="nav-tab-btn rg-tab text-gray-400"><i data-lucide="download" class="w-5 h-5"></i><span>Downloads</span></button>
+      <button type="button" data-tab="wishlist" id="tabBtn-wishlist" class="nav-tab-btn rg-tab text-gray-400"><i data-lucide="bookmark" class="w-5 h-5"></i><span>Wishlist</span></button>
+      </div>
+      <div class="rg-gl rg-lens" id="rgLens"></div>
+    </nav>
+
+    <!-- ================= APP DETAIL MODAL (APPLE STYLE SHEET) ================= -->
+    <div id="appDetailModal" class="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm hidden transition-opacity duration-300 opacity-0 pointer-events-none">
+      <div id="modalBackdropCloser" onclick="closeAppDetailModal()" class="flex-1 w-full"></div>
+
+      <!-- Sheet Container -->
+      <div id="detailSheet" class="relative w-full max-w-md mx-auto max-h-[92vh] bg-white dark:bg-[#161618] rounded-t-[2rem] shadow-2xl overflow-y-auto flex flex-col modal-enter border-t border-black/10 dark:border-white/10 pb-8 safe-bottom">
+        
+        <!-- Sheet Handle & Close Button -->
+        <div class="sticky top-0 z-20 px-5 pt-3 pb-2 flex items-center justify-between bg-white/95 dark:bg-[#161618]/95 backdrop-blur-md border-b border-black/[0.04] dark:border-white/[0.06]">
+          <div class="w-10 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2.5"></div>
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-2">App Details</span>
+          <button onclick="closeAppDetailModal()" class="pressable w-8 h-8 rounded-full bg-gray-200/70 dark:bg-apple-cardDarkSecondary flex items-center justify-center text-gray-600 dark:text-gray-300 pt-0.5" aria-label="Close modal">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Detail Content Container -->
+        <div id="detailModalBody" class="p-5 space-y-6">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- DOWNLOAD CONFIRMATION -->
+    <div id="downloadConfirmModal" class="fixed inset-0 z-[70] hidden items-end justify-center modal-backdrop px-4 pb-6">
+      <div class="w-full max-w-md rounded-[26px] bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] p-5 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-black dark:text-white">Confirm Download</h3>
+          <button onclick="closeDownloadConfirm()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-apple-cardDarkSecondary flex items-center justify-center" aria-label="Close confirmation"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <p id="downloadConfirmText" class="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">Do you want to download and install this application?</p>
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <button onclick="closeDownloadConfirm()" class="py-3 rounded-2xl bg-gray-200 dark:bg-apple-cardDarkSecondary text-black dark:text-white text-sm font-bold">Cancel</button>
+          <button id="downloadConfirmButton" onclick="confirmDownload()" class="py-3 rounded-2xl bg-apple-blue text-white text-sm font-bold">Install</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOWNLOAD PROGRESS -->
+    <div id="downloadProgressModal" class="fixed inset-0 z-[71] hidden items-end justify-center modal-backdrop px-4 pb-6">
+      <div class="w-full max-w-md rounded-[26px] bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] p-5 shadow-2xl">
+        <div class="flex items-center gap-3">
+          <img id="downloadProgressIcon" src="" alt="" class="w-12 h-12 ios-squircle object-cover bg-gray-200 dark:bg-gray-800">
+          <div class="min-w-0 flex-1"><h3 id="downloadProgressName" class="font-bold text-black dark:text-white truncate"></h3><p id="downloadProgressText" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Preparing download...</p></div>
+        </div>
+        <div class="mt-5 progress-track"><div id="downloadProgressFill" class="progress-fill" style="width:0%"></div></div>
+        <div class="mt-2 flex justify-between text-[11px] text-gray-500 dark:text-gray-400"><span id="downloadProgressPercent">0%</span><span id="downloadProgressSpeed"></span><span id="downloadProgressSize"></span></div>
+        <button id="downloadCancelButton" onclick="cancelActiveDownload()" type="button" class="mt-5 w-full py-3 rounded-2xl bg-gray-200 dark:bg-apple-cardDarkSecondary text-black dark:text-white text-sm font-bold">Cancel</button>
+      </div>
+    </div>
+
+    <!-- FIRST-TIME ONBOARDING -->
+    <div id="onboardingOverlay" class="onboarding-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+      <div class="onboarding-card">
+        <div id="onboardingCounter" class="onboarding-step">1 of 4</div>
+        <h2 id="onboardingTitle">Browse the store</h2>
+        <p id="onboardingBody">Use the main navigation to move between the store areas.</p>
+        <div class="onboarding-actions">
+          <button id="onboardingBack" type="button" onclick="onboardingBack()" class="bg-white/[0.08] text-white">Back</button>
+          <button id="onboardingNext" type="button" onclick="onboardingNext()" class="bg-apple-blue text-white">Next</button>
+        </div>
+        <button type="button" onclick="markOnboardingSeen()" class="onboarding-skip">Skip</button>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-black/90 dark:bg-white/95 text-white dark:text-black text-xs font-semibold shadow-xl backdrop-blur-md flex items-center gap-2 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+      <i id="toastIcon" data-lucide="check-circle" class="w-4 h-4 text-apple-green"></i>
+      <span id="toastMessage">Notification message</span>
+    </div>
+
+  </div>
+
+  <!-- No internet screen -->
+  <div id="noInternetScreen" class="rg-net hidden" role="alert" aria-live="assertive">
+    <div class="rg-ambient rg-ambient-net"><i></i><i></i><i></i></div>
+    <div class="rg-net-card rg-glass-panel">
+      <div class="rg-net-icon" id="rgNetIcon">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 24c14-12 34-12 48 0M16 33c10-8 22-8 32 0M24 42c5-4 11-4 16 0" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="51" r="3.2" fill="currentColor"/><path d="M10 10l44 44" stroke="#ff453a" stroke-width="4.5" stroke-linecap="round"/></svg>
+      </div>
+      <h1 id="rgNetTitle">No Internet Connection</h1>
+      <p id="rgNetText">Your internet is off or not working. Turn on Wi-Fi or mobile data, then tap Restart.</p>
+      <button type="button" id="rgNetRestart" class="rg-btn rg-btn-primary">Restart</button>
+      <button type="button" id="rgNetSettings" class="rg-btn rg-btn-ghost">Open network settings</button>
+      <div class="rg-net-status" id="rgNetStatus"><span class="rg-dot"></span><span id="rgNetStatusText">Waiting for connection…</span></div>
+    </div>
+  </div>
+
+  <!-- Rise Hub Store Engine -->
+  <script src="rise_hub.js"></script>
+  <!-- Liquid glass, offline guard and Apple-style Today -->
+  <script src="rise_glass.js"></script>
+  <!-- Rise Hub Automated Update Checker -->
+  <script src="riseup-update.js"></script>
+
+</body>
+</html>
